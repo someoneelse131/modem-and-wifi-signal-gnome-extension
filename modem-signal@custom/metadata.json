@@ -1,0 +1,7 @@
+{
+  "name": "Connection Signal Monitor",
+  "description": "Auto-detects WiFi or mobile broadband and displays accurate signal metrics in topbar",
+  "uuid": "modem-signal@custom",
+  "shell-version": ["45", "46", "47", "48", "49"],
+  "version": 2
+}
