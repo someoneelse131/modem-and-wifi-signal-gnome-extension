@@ -6,8 +6,8 @@ Get the Connection Signal Monitor up and running in 3 steps!
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/YOUR-USERNAME/modem-signal-gnome-extension.git
-cd modem-signal-gnome-extension
+git clone https://github.com/someoneelse131/modem-and-wifi-signal-gnome-extension.git
+cd modem-and-wifi-signal-gnome-extension
 
 # 2. Run the installer
 ./install.sh
@@ -73,4 +73,4 @@ mmcli -m 0 --signal-setup=5
 gnome-extensions list --enabled | grep modem-signal
 ```
 
-**Need help?** Check the [full README](README.md) or [open an issue](https://github.com/YOUR-USERNAME/modem-signal-gnome-extension/issues).
+**Need help?** Check the [full README](README.md) or [open an issue](https://github.com/someoneelse131/modem-and-wifi-signal-gnome-extension/issues).

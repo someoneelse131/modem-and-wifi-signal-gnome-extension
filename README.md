@@ -99,8 +99,8 @@ Your system's default signal indicator can be **very misleading**, especially fo
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/YOUR-USERNAME/modem-signal-gnome-extension.git
-   cd modem-signal-gnome-extension
+   git clone https://github.com/someoneelse131/modem-and-wifi-signal-gnome-extension.git
+   cd modem-and-wifi-signal-gnome-extension
    ```
 
 2. **Run the installation script:**
@@ -220,8 +220,4 @@ Created to solve the problem of misleading signal indicators on Linux systems, e
 
 ## Support
 
-If you encounter issues or have suggestions, please [open an issue](https://github.com/YOUR-USERNAME/modem-signal-gnome-extension/issues) on GitHub.
-
----
-
-**Note:** Remember to replace `YOUR-USERNAME` with your actual GitHub username before publishing!
+If you encounter issues or have suggestions, please [open an issue](https://github.com/someoneelse131/modem-and-wifi-signal-gnome-extension/issues) on GitHub.
