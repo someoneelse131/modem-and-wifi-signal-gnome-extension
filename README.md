@@ -14,7 +14,7 @@ Your system's default signal indicator can be **very misleading**, especially fo
 
 **The Solution:**
 - For **Mobile Broadband**: Uses **SNR (Signal-to-Noise Ratio)** for accurate quality assessment
-- For **WiFi**: Shows real signal percentage with proper quality thresholds
+- For **WiFi**: Shows real signal strength in dBm with proper quality thresholds
 - **Auto-switches** between connection types seamlessly
 
 ## Features
@@ -91,7 +91,7 @@ Your system's default signal indicator can be **very misleading**, especially fo
 - GNOME Shell 45 or later (tested on GNOME 49)
 - NetworkManager (standard on most Linux systems)
 - For mobile broadband: ModemManager (usually pre-installed)
-- For WiFi: Standard WiFi drivers
+- For WiFi: `iw` tool and standard WiFi drivers (iw is usually pre-installed)
 
 ## Installation
 
@@ -201,7 +201,7 @@ journalctl /usr/bin/gnome-shell -f | grep -i "signal\|error"
 The extension automatically:
 1. Detects your active connection type (WiFi or mobile broadband)
 2. Uses the appropriate monitoring method:
-   - **WiFi**: `nmcli` for signal strength and network info
+   - **WiFi**: `iw` for signal strength in dBm and `nmcli` for network info
    - **Mobile Broadband**: `mmcli` (ModemManager) for SNR/RSSI/RSRP
 3. Updates the topbar icon and value every 5 seconds
 4. Switches seamlessly when you change connections
