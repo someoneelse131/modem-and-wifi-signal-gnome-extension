@@ -200,6 +200,17 @@ class SignalIndicator extends PanelMenu.Button {
 
     _updateModemSignal() {
         try {
+            // First, ensure signal monitoring is enabled with 5 second refresh
+            let [setupOk] = GLib.spawn_command_line_sync('mmcli -m 0 --signal-setup=5');
+
+            if (!setupOk) {
+                this._setNoSignal();
+                return;
+            }
+
+            // Wait for signal data to be available (500ms should be enough)
+            GLib.usleep(500000);
+
             let [ok, stdout] = GLib.spawn_command_line_sync('mmcli -m 0 --signal-get');
 
             if (!ok) {
@@ -213,6 +224,12 @@ class SignalIndicator extends PanelMenu.Button {
             let snr = this._parseValue(output, 's/n:', 2);
             let rssi = this._parseValue(output, 'rssi:', 3, 'LTE');
             let rsrp = this._parseValue(output, 'rsrp:', 2);
+
+            // Check if we got valid data (snr should not be 0 if signal is present)
+            if (snr === 0 && rssi === 0 && rsrp === 0) {
+                this._setNoSignal();
+                return;
+            }
 
             // Determine quality and icon based on SNR
             let icon, quality;
