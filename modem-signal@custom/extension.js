@@ -8,6 +8,9 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
+// Promisify Gio.Subprocess methods for async/await support
+Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async');
+
 const SignalIndicator = GObject.registerClass(
 class SignalIndicator extends PanelMenu.Button {
     _init() {
@@ -72,6 +75,29 @@ class SignalIndicator extends PanelMenu.Button {
         this._startMonitoring();
     }
 
+    async _execCommandAsync(commandLine) {
+        try {
+            // Split command line into argv array
+            const argv = GLib.shell_parse_argv(commandLine)[1];
+
+            const proc = Gio.Subprocess.new(
+                argv,
+                Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE
+            );
+
+            const [stdout, stderr] = await proc.communicate_utf8_async(null, null);
+
+            if (!proc.get_successful()) {
+                return null;
+            }
+
+            return stdout;
+        } catch (e) {
+            logError(e, `Command execution failed: ${commandLine}`);
+            return null;
+        }
+    }
+
     _startMonitoring() {
         // Clear any existing timeout
         if (this._timeout) {
@@ -106,13 +132,11 @@ class SignalIndicator extends PanelMenu.Button {
         this._metric3Item.label.set_text('--');
     }
 
-    _getActiveConnectionType() {
+    async _getActiveConnectionType() {
         try {
             // Check default route to find which connection is actually being used
-            let [ok, stdout] = GLib.spawn_command_line_sync('ip route show default');
-            if (!ok) return null;
-
-            let output = new TextDecoder().decode(stdout);
+            let output = await this._execCommandAsync('ip route show default');
+            if (!output) return null;
 
             // Parse default route - format: "default via X.X.X.X dev DEVICE ..."
             // Get the device name from the route with lowest metric (preferred route)
@@ -152,14 +176,14 @@ class SignalIndicator extends PanelMenu.Button {
         return null;
     }
 
-    _updateSignal() {
+    async _updateSignal() {
         try {
-            let connType = this._getActiveConnectionType();
+            let connType = await this._getActiveConnectionType();
 
             if (connType === 'wifi') {
-                this._updateWiFiSignal();
+                await this._updateWiFiSignal();
             } else if (connType === 'modem') {
-                this._updateModemSignal();
+                await this._updateModemSignal();
             } else {
                 this._setNoSignal();
             }
@@ -169,16 +193,14 @@ class SignalIndicator extends PanelMenu.Button {
         }
     }
 
-    _updateWiFiSignal() {
+    async _updateWiFiSignal() {
         try {
             // Get WiFi device name
-            let [ok1, stdout1] = GLib.spawn_command_line_sync('nmcli -t -f DEVICE,TYPE device status');
-            if (!ok1) {
+            let deviceOutput = await this._execCommandAsync('nmcli -t -f DEVICE,TYPE device status');
+            if (!deviceOutput) {
                 this._setNoSignal();
                 return;
             }
-
-            let deviceOutput = new TextDecoder().decode(stdout1);
             let wifiDevice = null;
             for (let line of deviceOutput.split('\n')) {
                 if (line.includes(':wifi')) {
@@ -193,13 +215,11 @@ class SignalIndicator extends PanelMenu.Button {
             }
 
             // Get signal in dBm using iw
-            let [ok2, stdout2] = GLib.spawn_command_line_sync(`iw dev ${wifiDevice} link`);
-            if (!ok2) {
+            let iwOutput = await this._execCommandAsync(`iw dev ${wifiDevice} link`);
+            if (!iwOutput) {
                 this._setNoSignal();
                 return;
             }
-
-            let iwOutput = new TextDecoder().decode(stdout2);
 
             // Parse signal strength in dBm and SSID
             let signalDbm = 0;
@@ -255,27 +275,23 @@ class SignalIndicator extends PanelMenu.Button {
         }
     }
 
-    _updateModemSignal() {
+    async _updateModemSignal() {
         try {
             // First, ensure signal monitoring is enabled with 5 second refresh
-            let [setupOk] = GLib.spawn_command_line_sync('mmcli -m 0 --signal-setup=5');
+            let setupOutput = await this._execCommandAsync('mmcli -m 0 --signal-setup=5');
 
-            if (!setupOk) {
+            if (!setupOutput) {
                 this._setNoSignal();
                 return;
             }
 
-            // Wait for signal data to be available (500ms should be enough)
-            GLib.usleep(500000);
+            // Get signal data (no sleep needed - async operation will wait naturally)
+            let output = await this._execCommandAsync('mmcli -m 0 --signal-get');
 
-            let [ok, stdout] = GLib.spawn_command_line_sync('mmcli -m 0 --signal-get');
-
-            if (!ok) {
+            if (!output) {
                 this._setNoSignal();
                 return;
             }
-
-            let output = new TextDecoder().decode(stdout);
 
             // Parse values
             let snr = this._parseValue(output, 's/n:', 2);
