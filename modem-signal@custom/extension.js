@@ -47,12 +47,63 @@ class SignalIndicator extends PanelMenu.Button {
         this.menu.addMenuItem(this._metric2Item);
         this.menu.addMenuItem(this._metric3Item);
 
-        // Start updating
+        // Add separator
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
+        // Add monitoring toggle option
+        this._monitoringEnabled = true;
+        this._monitoringToggle = new PopupMenu.PopupSwitchMenuItem('Enable monitoring', this._monitoringEnabled);
+        this._monitoringToggle.connect('toggled', (item) => {
+            this._monitoringEnabled = item.state;
+            if (this._monitoringEnabled) {
+                // Start monitoring
+                this._startMonitoring();
+            } else {
+                // Stop monitoring
+                this._stopMonitoring();
+            }
+        });
+        this.menu.addMenuItem(this._monitoringToggle);
+
+        // Update interval
+        this._updateInterval = 5; // seconds between updates
+
+        // Start monitoring
+        this._startMonitoring();
+    }
+
+    _startMonitoring() {
+        // Clear any existing timeout
+        if (this._timeout) {
+            GLib.source_remove(this._timeout);
+            this._timeout = null;
+        }
+
+        // Update immediately
         this._updateSignal();
-        this._timeout = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 5, () => {
+
+        // Schedule periodic updates
+        this._timeout = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, this._updateInterval, () => {
             this._updateSignal();
             return GLib.SOURCE_CONTINUE;
         });
+    }
+
+    _stopMonitoring() {
+        // Clear timeout
+        if (this._timeout) {
+            GLib.source_remove(this._timeout);
+            this._timeout = null;
+        }
+
+        // Show disabled state
+        this._iconLabel.set_text('📡');
+        this._valueLabel.set_text('OFF');
+        this._typeItem.label.set_text('Type: Monitoring Disabled');
+        this._qualityItem.label.set_text('Quality: --');
+        this._metric1Item.label.set_text('--');
+        this._metric2Item.label.set_text('--');
+        this._metric3Item.label.set_text('--');
     }
 
     _getActiveConnectionType() {
@@ -164,6 +215,12 @@ class SignalIndicator extends PanelMenu.Button {
                 } else if (line.includes('freq:')) {
                     freq = line.split('freq:')[1].trim().split('.')[0];
                 }
+            }
+
+            // If no signal detected, show no signal
+            if (signalDbm === 0) {
+                this._setNoSignal();
+                return;
             }
 
             // Determine quality and icon based on dBm
